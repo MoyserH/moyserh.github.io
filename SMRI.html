@@ -1,0 +1,1591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudan Malaria Resilience Initiative (SMRI)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #fafaf9;
+            scroll-behavior: smooth;
+        }
+        .chart-container { 
+            position: relative; 
+            width: 100%; 
+            max-width: 900px; 
+            margin: 0 auto; 
+            height: 320px; 
+        }
+        .disease-card-active { 
+            background: linear-gradient(135deg, #10b981 0%, #0d9488 100%); 
+            color: white; 
+            box-shadow: 0 10px 25px -5px rgba(16, 185, 129, 0.3);
+            transform: scale(1.02);
+        }
+        .disease-card-inactive { 
+            background: white;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+        .disease-card-inactive:hover {
+            border-color: #6ee7b7;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .tab-active { 
+            border-bottom: 3px solid #059669;
+            color: #047857;
+            font-weight: 600;
+        }
+        .tab-inactive { 
+            color: #64748b;
+            transition: color 0.2s;
+        }
+        .tab-inactive:hover { 
+            color: #334155;
+        }
+        .drug-card-selected { 
+            border: 2px solid #10b981;
+            background-color: #f0fdfa;
+            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.1);
+        }
+        .drug-card-unselected { 
+            border: 1px solid #e2e8f0;
+            background: white;
+            transition: all 0.2s;
+        }
+        .drug-card-unselected:hover {
+            border-color: #a7f3d0;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .animate-fade { 
+            animation: fadeIn 0.4s ease-out; 
+        }
+        @keyframes fadeIn { 
+            from { 
+                opacity: 0; 
+                transform: translateY(8px); 
+            } 
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            } 
+        }
+        .alert-box { 
+            border-left: 4px solid;
+            padding: 1rem;
+            border-radius: 0 0.5rem 0.5rem 0;
+        }
+        .alert-danger { 
+            border-color: #ef4444;
+            background-color: #fef2f2;
+            color: #991b1b;
+        }
+        .alert-warning { 
+            border-color: #f59e0b;
+            background-color: #fffbeb;
+            color: #92400e;
+        }
+        .alert-success { 
+            border-color: #10b981;
+            background-color: #f0fdf4;
+            color: #065f46;
+        }
+        .alert-info { 
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+            color: #1e40af;
+        }
+        .stat-card { 
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .progress-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        .flow-step {
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            position: relative;
+        }
+        .flow-step:not(:last-child):after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: -0.5rem;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 1rem;
+            background: #e2e8f0;
+        }
+        .kpi-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid #e2e8f0;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+        }
+        .insight-card {
+            background: white;
+            border-left: 4px solid;
+            padding: 1.25rem;
+            border-radius: 0 0.5rem 0.5rem 0;
+        }
+        .critical-border {
+            border: 2px solid #ef4444;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .drug-icon {
+            font-size: 1.5rem;
+            margin-right: 0.75rem;
+        }
+        .section-divider {
+            border-top: 2px dashed #e2e8f0;
+            margin: 2rem 0;
+        }
+      .pdf-section {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border-radius: 12px;
+          padding: 2rem;
+          margin: 2rem 0;
+          color: white;
+          box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+      }
+      .pdf-buttons {
+          display: flex;
+          gap: 1rem;
+          flex-wrap: wrap;
+          margin-top: 1.5rem;
+      }
+      .pdf-button {
+          background: white;
+          color: #667eea;
+          border: none;
+          padding: 0.75rem 1.5rem;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+      }
+      .pdf-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+      }
+      .pdf-icon {
+          font-size: 1.2rem;
+      }
+    </style>
+</head>
+<body class="text-slate-900">
+
+    <!-- Header with Disease Selector -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col lg:flex-row justify-between items-center py-4 gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-3 rounded-lg font-bold text-xl">
+                        ⚕️
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-slate-900">Sudan Malaria Resilience Initiative</h1>
+                        <p class="text-sm text-slate-500">Pharmaceutical Stewardship in Crisis Settings</p>
+                    </div>
+                </div>
+                
+                <!-- Disease Mode Toggle -->
+                <div class="grid grid-cols-3 gap-2 w-full lg:w-auto">
+                    <button onclick="switchDisease('malaria')" id="btn-malaria" class="disease-card-active px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 flex flex-col items-center">
+                        <div class="text-xl mb-1">🦟</div>
+                        <span>Malaria</span>
+                    </button>
+                    <button onclick="switchDisease('cholera')" id="btn-cholera" class="disease-card-inactive px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 flex flex-col items-center">
+                        <div class="text-xl mb-1">💧</div>
+                        <span>Cholera</span>
+                    </button>
+                    <button onclick="switchDisease('dengue')" id="btn-dengue" class="disease-card-inactive px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 flex flex-col items-center">
+                        <div class="text-xl mb-1">🩸</div>
+                        <span>Dengue</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Tab Navigation -->
+            <nav class="flex overflow-x-auto gap-6 pb-3 scrollbar-hide" id="main-nav">
+                <!-- Tabs will be injected by JavaScript -->
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Dynamic Section Header -->
+        <div id="section-intro" class="mb-8 animate-fade">
+            <!-- Content injected by JavaScript -->
+        </div>
+
+        <!-- Content Area -->
+        <div id="content-container" class="animate-fade">
+            <!-- Dynamic content injected here -->
+        </div>
+    </main>
+
+    <section class="pdf-section">
+    <div class="max-w-7xl mx-auto">
+        <h2 class="text-2xl font-bold mb-4 text-center">📄 Download Complete Research Report</h2>
+        <p class="opacity-90 mb-8 text-center max-w-3xl mx-auto">
+            Access the full Sudan Malaria Resilience Initiative (SMRI) research paper in PDF format. You can choose the standard version or the professionally typeset LaTeX version.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Plain PDF Box -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-6">
+                <div class="flex items-center mb-4">
+                    <div class="bg-blue-100 text-blue-800 p-3 rounded-lg mr-4">
+                        📋
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">Standard Version</h3>
+                        <p class="text-sm text-slate-600">Plain text PDF format</p>
+                    </div>
+                </div>
+                <div class="pdf-buttons">
+                    <a href="https://github.com/MoyserH/SMRI/blob/a92ab86bbf412dfb31b2516626089f28ca90ee8f/SMRI-plain.pdf"
+                       target="_blank"
+                       class="pdf-button">
+                        <span class="pdf-icon">👁️</span>
+                        View Online
+                    </a>
+                    <a href="https://github.com/MoyserH/SMRI/raw/a92ab86bbf412dfb31b2516626089f28ca90ee8f/SMRI-plain.pdf"
+                       download="SMRI_Standard_Report.pdf"
+                       class="pdf-button">
+                        <span class="pdf-icon">⬇️</span>
+                        Download
+                    </a>
+                </div>
+                <div class="mt-4 text-xs text-slate-500">
+                    <p>📁 File: SMRI-plain.pdf ~400 Kb</p>
+                </div>
+            </div>
+
+            <!-- LaTeX PDF Box -->
+            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-6">
+                <div class="flex items-center mb-4">
+                    <div class="bg-emerald-100 text-emerald-800 p-3 rounded-lg mr-4">
+                        ✨
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">LaTeX Version</h3>
+                        <p class="text-sm text-slate-600">Professionally typeset with LaTeX</p>
+                    </div>
+                </div>
+                <div class="pdf-buttons">
+                    <!-- REPLACE THIS URL with your LaTeX PDF's raw GitHub URL -->
+                    <a href="https://github.com/MoyserH/SMRI/blob/a92ab86bbf412dfb31b2516626089f28ca90ee8f/SMRI-latex.pdf"
+                       target="_blank"
+                       class="pdf-button">
+                        <span class="pdf-icon">👁️</span>
+                        View Online
+                    </a>
+                    <!-- REPLACE THIS URL with your LaTeX PDF's raw GitHub URL -->
+                    <a href="https://github.com/MoyserH/SMRI/raw/a92ab86bbf412dfb31b2516626089f28ca90ee8f/SMRI-latex.pdf"
+                       download="SMRI_LaTeX_Report.pdf"
+                       class="pdf-button">
+                        <span class="pdf-icon">⬇️</span>
+                        Download
+                    </a>
+                </div>
+                <div class="mt-4 text-xs text-slate-500">
+                    <p>📁 File: SMRI-latex.pdf ~400 Kb</p>
+                    <p class="mt-1">📐 Enhanced typography, cross-references, and table of contents</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+
+    <!-- Footer -->
+    <footer class="bg-slate-50 border-t border-slate-200 mt-16 py-10">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                <div>
+                    <h3 class="font-bold text-slate-800 mb-4">SMRI Project</h3>
+                    <p class="text-slate-600 text-sm">A pharmacy-led approach to humanitarian pharmaceutical stewardship in conflict-affected Sudan.</p>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-800 mb-4">Key Principles</h3>
+                    <ul class="text-slate-600 text-sm space-y-2">
+                        <li>• Pharmaceutical stewardship</li>
+                        <li>• Supply chain security</li>
+                        <li>• Resistance monitoring</li>
+                        <li>• Adaptive protocols</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-800 mb-4">Implementation</h3>
+                    <p class="text-slate-600 text-sm">Field-based model deploying sentinel pharmacy points and three-tier detection systems for falsified medicines.</p>
+                </div>
+            </div>
+            <div class="text-center border-t border-slate-200 pt-8">
+                <p class="text-slate-600 font-medium">Sudan Malaria Resilience Initiative</p>
+                <p class="text-slate-400 text-sm mt-2">MoyserH Personal Project SMRI © 2024-2025</p>
+                <p class="text-slate-300 text-xs mt-4">Pharmaceutical intervention in humanitarian crises</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ===== DATA STORE =====
+        const diseases = {
+            malaria: {
+                name: "Malaria",
+                color: "emerald",
+                icon: "🦟",
+                intro: "Plasmodium falciparum malaria remains the leading cause of morbidity in conflict-affected Sudan. With 80% of health facilities non-functional and artemisinin resistance emerging in East Africa, pharmaceutical stewardship is critical to preserve ACT efficacy.",
+                epidemiology: {
+                    title: "Seasonal Transmission Dynamics",
+                    labels: ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'],
+                    data: [200, 350, 1200, 2500, 2100, 1400],
+                    chartLabel: "Confirmed Cases (Gezira Region)"
+                },
+                pharmacology: {
+                    preferred: {
+                        name: "Artemether-Lumefantrine (AL/Coartem)",
+                        class: "Artemisinin-Based Combination Therapy (ACT)",
+                        mechanism: "Artemether generates free radicals via heme-catalyzed endoperoxide cleavage, causing rapid parasite death. Lumefantrine inhibits heme polymerization, preventing detoxification.",
+                        safety: "First-Line Treatment",
+                        dosing: "Twice daily for 3 days with fatty food to enhance lumefantrine absorption",
+                        resistance: "K13 mutations (C580Y, R561H) in East Africa confer delayed parasite clearance",
+                        status: "PREFERRED",
+                        icon: "💊"
+                    },
+                    alternative: {
+                        name: "Dihydroartemisinin-Piperaquine (DP)",
+                        class: "ACT with Long-Acting Partner",
+                        mechanism: "Similar artemisinin action. Piperaquine has a 23-day half-life providing post-treatment prophylaxis, reducing reinfection rates by 3-9.6x in high-transmission zones.",
+                        safety: "Excellent for Vulnerable Populations",
+                        dosing: "Once daily for 3 days, less dependent on fat intake",
+                        resistance: "Preferable in camps where reinfection burden is high",
+                        status: "STRATEGIC",
+                        icon: "🛡️"
+                    },
+                    dangerous: {
+                        name: "Chloroquine",
+                        class: "4-Aminoquinoline",
+                        mechanism: "Historically effective via heme polymerization inhibition, but widespread pfcrt mutations grant resistance.",
+                        safety: "OBSOLETE",
+                        dosing: "No longer recommended for P. falciparum",
+                        resistance: "95%+ resistance in Sub-Saharan Africa since 1990s",
+                        status: "CONTRAINDICATED",
+                        icon: "🚫"
+                    }
+                },
+                severeCase: {
+                    title: "Severe Malaria Protocol",
+                    goldStandard: "IV Artesunate (2.4mg/kg at 0, 12, 24h)",
+                    backup: "IV Quinine in 5% Dextrose (loading dose required)",
+                    warning: "Quinine causes hypoglycemia—mandatory dextrose co-administration"
+                },
+                resistance: {
+                    title: "K13 Resistance Mechanism & Falsified Medicine Detection",
+                    k13Description: "K13 mutations reduce hemoglobin endocytosis → less heme → reduced artemisinin activation → parasite dormancy.",
+                    mutations: ["C580Y", "R561H", "R561L", "A578S"],
+                    clinicalImpact: "Delayed parasite clearance (>5 hours)",
+                    falsifiedBatches: ["F2261", "F1901", "NOF 2153"],
+                    detectionMethods: [
+                        "Visual: Check for Green Leaf logo after program ended",
+                        "Disintegration: Genuine tablets dissolve in <3 mins",
+                        "Physical: Compare with known genuine samples"
+                    ]
+                },
+                calculator: {
+                    title: "Malaria Dosing Calculator",
+                    description: "Calculate pediatric doses from adult tablets during shortages",
+                    dosingTable: [
+                        { weight: "5-14 kg", dose: "¼ Tablet", frequency: "Twice daily" },
+                        { weight: "15-24 kg", dose: "½ Tablet", frequency: "Twice daily" },
+                        { weight: "25-34 kg", dose: "¾ Tablet", frequency: "Twice daily" },
+                        { weight: ">35 kg", dose: "1 Tablet", frequency: "Twice daily" }
+                    ]
+                }
+            },
+            cholera: {
+                name: "Cholera",
+                color: "blue",
+                icon: "💧",
+                intro: "With 29,170 suspected cases and 629 deaths across 15 states in 2025, cholera outbreaks thrive in displacement camps lacking WASH infrastructure. Rapid rehydration is the cornerstone of treatment.",
+                epidemiology: {
+                    title: "Outbreak Surge Pattern",
+                    labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6'],
+                    data: [10, 85, 240, 410, 290, 150],
+                    chartLabel: "Confirmed Cases (Camp Surge Model)"
+                },
+                pharmacology: {
+                    preferred: {
+                        name: "Oral Rehydration Solution (ORS)",
+                        class: "Electrolyte Replacement",
+                        mechanism: "Glucose-sodium co-transport in intestinal epithelium drives rapid water absorption, reversing dehydration",
+                        safety: "Life-Saving",
+                        dosing: "Plan B: 75ml/kg over 4h for moderate dehydration. Plan C: 100ml/kg IV for severe shock",
+                        resistance: "N/A—physiological intervention",
+                        status: "VITAL",
+                        icon: "💦"
+                    },
+                    alternative: {
+                        name: "Ringer's Lactate (IV)",
+                        class: "Crystalloid Fluid",
+                        mechanism: "Isotonic fluid replacement for severe dehydration with shock",
+                        safety: "Critical Care",
+                        dosing: "30ml/kg in 30 mins (bolus), then 70ml/kg over 2.5h",
+                        resistance: "N/A",
+                        status: "EMERGENCY",
+                        icon: "🏥"
+                    },
+                    dangerous: {
+                        name: "Inappropriate Antibiotic Use",
+                        class: "Antimicrobial Stewardship Failure",
+                        mechanism: "Doxycycline/Azithromycin reduce bacterial load but are NOT substitutes for rehydration",
+                        safety: "SECONDARY",
+                        dosing: "Only after rehydration initiated. Overuse drives resistance.",
+                        resistance: "Emerging Vibrio cholerae resistance to fluoroquinolones",
+                        status: "ADJUNCT ONLY",
+                        icon: "⚠️"
+                    }
+                },
+                severeCase: {
+                    title: "WHO Cholera Management",
+                    goldStandard: "Immediate ORS or IV Ringer's Lactate based on dehydration assessment",
+                    backup: "Doxycycline (single 300mg dose) or Azithromycin (1g) after stabilization",
+                    warning: "Rehydration FIRST. Antibiotics do NOT treat dehydration."
+                },
+                resistance: {
+                    title: "Supply Chain & WASH Crisis",
+                    washStats: "80% of health facilities non-functional, limited clean water access",
+                    supplyChain: [
+                        "Domestic manufacturing ceased",
+                        "Import channels blocked",
+                        "Private sector prices increased 200%+",
+                        "Medicines scarcity across all states"
+                    ],
+                    priorities: ["Rehydration over antibiotics", "ORS production from raw materials", "Community health worker training"]
+                },
+                calculator: {
+                    title: "Cholera Fluid Calculator",
+                    description: "Calculate rehydration needs based on dehydration severity",
+                    plans: [
+                        { type: "Plan A (Mild)", rate: "ORS ad libitum", volume: "N/A" },
+                        { type: "Plan B (Moderate)", rate: "75ml/kg over 4h", volume: "Calculate based on weight" },
+                        { type: "Plan C (Severe)", rate: "100ml/kg IV over 3h", volume: "Calculate based on weight" }
+                    ]
+                }
+            },
+            dengue: {
+                name: "Dengue Fever",
+                color: "teal",
+                icon: "🩸",
+                intro: "With 10,464 cases since July 2024, dengue adds complexity to Sudan's syndemic. Thrombocytopenia makes NSAID avoidance critical—Paracetamol is the only safe antipyretic.",
+                epidemiology: {
+                    title: "Outbreak Trajectory (2024-2025)",
+                    labels: ['W1', 'W2', 'W3', 'W4', 'W5', 'W6'],
+                    data: [45, 120, 680, 1450, 920, 310],
+                    chartLabel: "Confirmed Dengue Cases"
+                },
+                pharmacology: {
+                    preferred: {
+                        name: "Paracetamol (Acetaminophen)",
+                        class: "Analgesic/Antipyretic",
+                        mechanism: "Centrally acting COX inhibitor; does NOT affect peripheral platelet function or gastric mucosa",
+                        safety: "SAFE in Dengue",
+                        dosing: "15mg/kg every 6 hours (max 4g/day in adults)",
+                        resistance: "N/A",
+                        status: "ONLY SAFE OPTION",
+                        icon: "✅"
+                    },
+                    alternative: {
+                        name: "IV Fluid Management",
+                        class: "Supportive Care",
+                        mechanism: "Maintenance fluids prevent shock during plasma leakage phase (Days 3-7)",
+                        safety: "Critical",
+                        dosing: "Holliday-Segar formula adjusted for hematocrit levels",
+                        resistance: "N/A",
+                        status: "STANDARD CARE",
+                        icon: "💉"
+                    },
+                    dangerous: {
+                        name: "NSAIDs (Ibuprofen/Aspirin)",
+                        class: "Non-Steroidal Anti-Inflammatory",
+                        mechanism: "Inhibit COX-1, blocking Thromboxane A2 and preventing platelet aggregation—CATASTROPHIC in thrombocytopenic patients",
+                        safety: "FATAL RISK",
+                        dosing: "NEVER USE",
+                        resistance: "N/A",
+                        status: "ABSOLUTELY CONTRAINDICATED",
+                        icon: "☠️"
+                    }
+                },
+                severeCase: {
+                    title: "Dengue Hemorrhagic Fever Protocol",
+                    goldStandard: "Fluid resuscitation with crystalloids (avoid colloids)",
+                    backup: "Platelet transfusion only if count <10,000 with active bleeding",
+                    warning: "NO NSAIDs. NO IM injections. Monitor hematocrit every 4-6 hours."
+                },
+                resistance: {
+                    title: "Diagnostic Dilemma & Drug Safety",
+                    challenge: "Malaria/Dengue/Cholera co-present with febrile illness",
+                    criticalPoint: "Misdiagnosis leads to fatal NSAID administration in dengue",
+                    education: [
+                        "Community awareness: 'Haboub' (Ibuprofen) is dangerous in dengue",
+                        "Pharmacist role: First-line advisor for febrile patients",
+                        "Training: Distinguish dengue rash from malaria symptoms"
+                    ]
+                },
+                calculator: {
+                    title: "Dengue Fluid Calculator",
+                    description: "Calculate maintenance fluids using Holliday-Segar method",
+                    formula: "First 10kg: 100ml/kg, Next 10kg: 50ml/kg, Remaining: 20ml/kg",
+                    phases: [
+                        { phase: "Febrile Phase", action: "Paracetamol, monitor hydration" },
+                        { phase: "Critical Phase (Days 3-7)", action: "Careful fluid management, monitor hematocrit" },
+                        { phase: "Recovery Phase", action: "Watch for fluid overload" }
+                    ]
+                }
+            }
+        };
+
+        // ===== STATE MANAGEMENT =====
+        let currentDisease = 'malaria';
+        let currentTab = 'overview';
+        let selectedDrug = 'preferred';
+
+        // ===== CORE CONTROLLERS =====
+        function switchDisease(disease) {
+            currentDisease = disease;
+            currentTab = 'overview';
+            selectedDrug = 'preferred';
+            updateDiseaseButtons();
+            renderNavigation();
+            renderView();
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            selectedDrug = 'preferred';
+            renderNavigation();
+            renderView();
+        }
+
+        function selectDrug(drugType) {
+            selectedDrug = drugType;
+            renderDrugComparison();
+        }
+
+        function updateDiseaseButtons() {
+            ['malaria', 'cholera', 'dengue'].forEach(d => {
+                const btn = document.getElementById(`btn-${d}`);
+                btn.className = d === currentDisease ? 
+                    'disease-card-active px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 flex flex-col items-center' :
+                    'disease-card-inactive px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 flex flex-col items-center';
+            });
+        }
+
+        function renderNavigation() {
+            const nav = document.getElementById('main-nav');
+            const tabs = [
+                { id: 'overview', label: 'Epidemiology & Context' },
+                { id: 'pharmacology', label: 'Drug Comparison' },
+                { id: 'resistance', label: 'Resistance & Supply' },
+                { id: 'calculator', label: 'Clinical Tools' },
+                { id: 'project', label: 'SMRI Project' }
+            ];
+
+            nav.innerHTML = tabs.map(t => `
+                <button onclick="switchTab('${t.id}')" class="${currentTab === t.id ? 'tab-active' : 'tab-inactive'} pb-3 px-3 text-sm font-medium transition-colors whitespace-nowrap">
+                    ${t.label}
+                </button>
+            `).join('');
+        }
+
+        function renderView() {
+            const data = diseases[currentDisease];
+            const intro = document.getElementById('section-intro');
+            const container = document.getElementById('content-container');
+
+            // Render intro section
+            intro.innerHTML = `
+                <div class="flex flex-col md:flex-row items-start gap-6">
+                    <div class="text-5xl md:text-6xl">${data.icon}</div>
+                    <div class="flex-1">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-3">${data.name} Management in Sudan</h2>
+                        <p class="text-slate-600 leading-relaxed text-lg">${data.intro}</p>
+                        <div class="mt-4 flex flex-wrap gap-3">
+                            <span class="bg-${data.color}-100 text-${data.color}-800 px-3 py-1 rounded-full text-xs font-bold">
+                                Crisis Response
+                            </span>
+                            <span class="bg-slate-100 text-slate-800 px-3 py-1 rounded-full text-xs font-bold">
+                                Pharmaceutical Stewardship
+                            </span>
+                            <span class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-xs font-bold">
+                                Humanitarian Setting
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Render main content based on tab
+            if (currentTab === 'overview') {
+                container.innerHTML = renderOverview(data);
+                setTimeout(() => initChart(data), 100);
+            } else if (currentTab === 'pharmacology') {
+                container.innerHTML = renderPharmacology(data);
+                renderDrugComparison();
+            } else if (currentTab === 'resistance') {
+                container.innerHTML = renderResistance(data);
+            } else if (currentTab === 'calculator') {
+                container.innerHTML = renderCalculator(data);
+                setupCalculator();
+            } else if (currentTab === 'project') {
+                container.innerHTML = renderProject();
+            }
+        }
+
+        // ===== VIEW RENDERERS =====
+        function renderOverview(data) {
+            const crisisStats = {
+                malaria: {
+                    stat1: { value: "80%", label: "Health Facilities Non-Functional", icon: "🏥", color: "red" },
+                    stat2: { value: "21%", label: "Medicines May Be Falsified", icon: "⚠️", color: "amber" },
+                    stat3: { value: "12.8M", label: "Forcibly Displaced", icon: "🚶", color: "blue" }
+                },
+                cholera: {
+                    stat1: { value: "629", label: "Cholera Deaths (2025)", icon: "💀", color: "red" },
+                    stat2: { value: "29,170", label: "Suspected Cases", icon: "📈", color: "amber" },
+                    stat3: { value: "15", label: "Affected States", icon: "🗺️", color: "blue" }
+                },
+                dengue: {
+                    stat1: { value: "10,464", label: "Cases Since July 2024", icon: "📊", color: "red" },
+                    stat2: { value: "95%", label: "Misdiagnosis Risk", icon: "🔍", color: "amber" },
+                    stat3: { value: "100%", label: "NSAID Contraindication", icon: "🚫", color: "emerald" }
+                }
+            };
+
+            const stats = crisisStats[currentDisease];
+
+            return `
+                <div class="space-y-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Chart -->
+                        <div class="lg:col-span-2 stat-card">
+                            <h3 class="text-lg font-bold text-slate-800 mb-4">${data.epidemiology.title}</h3>
+                            <div class="chart-container">
+                                <canvas id="mainChart"></canvas>
+                            </div>
+                            <p class="text-sm text-slate-500 mt-4 text-center">${data.epidemiology.chartLabel}</p>
+                        </div>
+                        
+                        <!-- Crisis Stats -->
+                        <div class="space-y-4">
+                            ${Object.values(stats).map(stat => `
+                                <div class="stat-card">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div class="bg-${stat.color}-100 p-3 rounded-lg text-2xl">${stat.icon}</div>
+                                        <div>
+                                            <div class="text-2xl font-bold text-slate-900">${stat.value}</div>
+                                            <div class="text-xs text-slate-500">${stat.label}</div>
+                                        </div>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill bg-${stat.color}-500" style="width: ${Math.min(100, parseFloat(stat.value) * 3)}%"></div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Alert Boxes -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        ${currentDisease === 'malaria' ? `
+                            <div class="alert-box alert-danger">
+                                <h4 class="font-bold mb-2">⚠️ K13 Mutations Detected</h4>
+                                <p class="text-sm">R561H and C580Y variants now confirmed in Rwanda, Tanzania, and South Sudan—signaling artemisinin partial resistance spread from Southeast Asia.</p>
+                            </div>
+                        ` : currentDisease === 'cholera' ? `
+                            <div class="alert-box alert-warning">
+                                <h4 class="font-bold mb-2">💧 WASH Crisis</h4>
+                                <p class="text-sm">629 cholera deaths in 2025. Displacement camps lack clean water—rehydration must be prioritized over antibiotics.</p>
+                            </div>
+                        ` : `
+                            <div class="alert-box alert-danger critical-border">
+                                <h4 class="font-bold mb-2">☠️ NSAID Danger</h4>
+                                <p class="text-sm">Ibuprofen/Aspirin are FATAL in dengue due to thrombocytopenia. Paracetamol is the ONLY safe antipyretic.</p>
+                            </div>
+                        `}
+                        
+                        <div class="alert-box alert-success">
+                            <h4 class="font-bold mb-2">⚕️ Pharmacist Intervention Point</h4>
+                            <p class="text-sm">Field pharmacists are the first line of defense—screening medicines for falsification, adjusting protocols during stockouts, and preventing dangerous drug interactions.</p>
+                        </div>
+                    </div>
+
+                    <!-- Syndemic Context -->
+                    <div class="stat-card">
+                        <h3 class="font-bold text-lg text-slate-800 mb-4">Syndemic Interaction in Sudan</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="insight-card border-emerald-500">
+                                <h4 class="font-bold text-slate-800 mb-2">Malaria</h4>
+                                <p class="text-sm text-slate-600">Leading cause of morbidity. 80% health facility destruction enables vector resurgence.</p>
+                            </div>
+                            <div class="insight-card border-blue-500">
+                                <h4 class="font-bold text-slate-800 mb-2">Cholera</h4>
+                                <p class="text-sm text-slate-600">WASH infrastructure collapse. 29,170 cases with high mortality in displacement camps.</p>
+                            </div>
+                            <div class="insight-card border-teal-500">
+                                <h4 class="font-bold text-slate-800 mb-2">Dengue</h4>
+                                <p class="text-sm text-slate-600">10,464+ cases. Diagnostic overlap with malaria creates treatment risks.</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-4 bg-slate-50 rounded-lg">
+                            <p class="text-sm text-slate-700"><strong>Multiplier Effect:</strong> Malnutrition rates >30% in North Darfur compromise immune response, increasing severity of all three diseases.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderPharmacology(data) {
+            return `
+                <div class="space-y-8">
+                    <!-- Drug Selection Cards -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <button onclick="selectDrug('preferred')" id="card-preferred" class="drug-card-selected w-full p-5 rounded-xl transition-all text-left">
+                            <div class="flex items-start mb-3">
+                                <span class="drug-icon">${data.pharmacology.preferred.icon}</span>
+                                <div class="flex-1">
+                                    <div class="flex justify-between items-start">
+                                        <h4 class="font-bold text-slate-800">${data.pharmacology.preferred.name}</h4>
+                                        <span class="bg-emerald-100 text-emerald-800 status-badge">${data.pharmacology.preferred.status}</span>
+                                    </div>
+                                    <p class="text-xs text-slate-600 mt-1">${data.pharmacology.preferred.class}</p>
+                                </div>
+                            </div>
+                            <p class="text-xs text-slate-500">Click for details</p>
+                        </button>
+
+                        <button onclick="selectDrug('alternative')" id="card-alternative" class="drug-card-unselected w-full p-5 rounded-xl transition-all text-left">
+                            <div class="flex items-start mb-3">
+                                <span class="drug-icon">${data.pharmacology.alternative.icon}</span>
+                                <div class="flex-1">
+                                    <div class="flex justify-between items-start">
+                                        <h4 class="font-bold text-slate-800">${data.pharmacology.alternative.name}</h4>
+                                        <span class="bg-blue-100 text-blue-800 status-badge">${data.pharmacology.alternative.status}</span>
+                                    </div>
+                                    <p class="text-xs text-slate-600 mt-1">${data.pharmacology.alternative.class}</p>
+                                </div>
+                            </div>
+                            <p class="text-xs text-slate-500">Click for details</p>
+                        </button>
+
+                        <button onclick="selectDrug('dangerous')" id="card-dangerous" class="drug-card-unselected w-full p-5 rounded-xl transition-all text-left">
+                            <div class="flex items-start mb-3">
+                                <span class="drug-icon">${data.pharmacology.dangerous.icon}</span>
+                                <div class="flex-1">
+                                    <div class="flex justify-between items-start">
+                                        <h4 class="font-bold text-slate-800">${data.pharmacology.dangerous.name}</h4>
+                                        <span class="bg-red-100 text-red-800 status-badge">${data.pharmacology.dangerous.status}</span>
+                                    </div>
+                                    <p class="text-xs text-slate-600 mt-1">${data.pharmacology.dangerous.class}</p>
+                                </div>
+                            </div>
+                            <p class="text-xs text-slate-500">Click for details</p>
+                        </button>
+                    </div>
+
+                    <!-- Drug Detail Display -->
+                    <div class="stat-card" id="drug-detail">
+                        <div class="text-center py-12">
+                            <div class="text-4xl mb-4">💊</div>
+                            <h3 class="text-lg font-medium text-slate-700">Select a medication to view detailed pharmacological information</h3>
+                            <p class="text-sm text-slate-500 mt-2">Compare mechanism of action, dosing, safety profile, and resistance considerations</p>
+                        </div>
+                    </div>
+
+                    <!-- Severe Case Protocol -->
+                    <div class="stat-card">
+                        <h3 class="font-bold text-slate-800 mb-6 text-lg">${data.severeCase.title}</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="bg-emerald-50 p-5 rounded-lg border border-emerald-100">
+                                <div class="flex items-center mb-3">
+                                    <span class="bg-emerald-100 text-emerald-800 p-2 rounded-lg mr-3">🏅</span>
+                                    <h4 class="font-bold text-emerald-800">Gold Standard</h4>
+                                </div>
+                                <p class="text-sm text-slate-700">${data.severeCase.goldStandard}</p>
+                            </div>
+                            <div class="bg-blue-50 p-5 rounded-lg border border-blue-100">
+                                <div class="flex items-center mb-3">
+                                    <span class="bg-blue-100 text-blue-800 p-2 rounded-lg mr-3">🔄</span>
+                                    <h4 class="font-bold text-blue-800">Backup Protocol</h4>
+                                </div>
+                                <p class="text-sm text-slate-700">${data.severeCase.backup}</p>
+                            </div>
+                            <div class="bg-red-50 p-5 rounded-lg border border-red-100">
+                                <div class="flex items-center mb-3">
+                                    <span class="bg-red-100 text-red-800 p-2 rounded-lg mr-3">⚠️</span>
+                                    <h4 class="font-bold text-red-800">Critical Warning</h4>
+                                </div>
+                                <p class="text-sm text-slate-700">${data.severeCase.warning}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDrugComparison() {
+            const data = diseases[currentDisease].pharmacology[selectedDrug];
+            const detail = document.getElementById('drug-detail');
+            
+            // Update card styles
+            ['preferred', 'alternative', 'dangerous'].forEach(type => {
+                const card = document.getElementById(`card-${type}`);
+                card.className = type === selectedDrug ? 
+                    'drug-card-selected w-full p-5 rounded-xl transition-all text-left' :
+                    'drug-card-unselected w-full p-5 rounded-xl transition-all text-left';
+            });
+
+            const statusColors = {
+                'PREFERRED': 'emerald',
+                'VITAL': 'emerald',
+                'STRATEGIC': 'blue',
+                'EMERGENCY': 'blue',
+                'STANDARD CARE': 'teal',
+                'ONLY SAFE OPTION': 'teal',
+                'CONTRAINDICATED': 'red',
+                'OBSOLETE': 'red',
+                'ADJUNCT ONLY': 'amber',
+                'SECONDARY': 'amber'
+            };
+
+            const color = statusColors[data.status] || 'slate';
+
+            detail.innerHTML = `
+                <div class="animate-fade">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                        <div class="flex items-center gap-4">
+                            <span class="text-4xl">${data.icon}</span>
+                            <div>
+                                <h2 class="text-2xl font-bold text-slate-900">${data.name}</h2>
+                                <p class="text-sm text-slate-500 font-medium">${data.class}</p>
+                            </div>
+                        </div>
+                        <span class="bg-${color}-100 text-${color}-800 px-4 py-2 rounded-full text-sm font-bold">
+                            ${data.status}
+                        </span>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-500 uppercase mb-3">Mechanism of Action</h4>
+                            <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                                <p class="text-slate-700 leading-relaxed">${data.mechanism}</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-white p-5 rounded-lg border border-slate-200">
+                                <h4 class="text-sm font-bold text-slate-500 uppercase mb-3">Safety Profile</h4>
+                                <div class="flex items-center">
+                                    <span class="text-2xl mr-3">${data.safety.includes('FATAL') || data.safety === 'OBSOLETE' ? '☠️' : data.safety.includes('SAFE') ? '✅' : '⚠️'}</span>
+                                    <p class="text-lg font-medium text-slate-700">${data.safety}</p>
+                                </div>
+                            </div>
+                            <div class="bg-white p-5 rounded-lg border border-slate-200">
+                                <h4 class="text-sm font-bold text-slate-500 uppercase mb-3">Dosing Protocol</h4>
+                                <p class="text-slate-700">${data.dosing}</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-amber-50 border border-amber-200 p-5 rounded-lg">
+                            <div class="flex items-center mb-3">
+                                <span class="bg-amber-100 text-amber-800 p-2 rounded-lg mr-3">🔬</span>
+                                <h4 class="font-bold text-amber-800">Resistance Considerations</h4>
+                            </div>
+                            <p class="text-amber-900">${data.resistance}</p>
+                        </div>
+
+                        ${currentDisease === 'malaria' && selectedDrug === 'preferred' ? `
+                            <div class="bg-emerald-50 border border-emerald-200 p-5 rounded-lg">
+                                <div class="flex items-center mb-3">
+                                    <span class="bg-emerald-100 text-emerald-800 p-2 rounded-lg mr-3">📋</span>
+                                    <h4 class="font-bold text-emerald-800">Administration Note</h4>
+                                </div>
+                                <p class="text-emerald-900">Must be taken with fatty food to enhance lumefantrine absorption. In famine conditions, absorption may be compromised.</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderResistance(data) {
+            const resistanceData = data.resistance;
+            
+            return `
+                <div class="space-y-8">
+                    <!-- Main Resistance/Section Title -->
+                    <div class="stat-card">
+                        <h3 class="text-xl font-bold text-slate-800 mb-6">${resistanceData.title}</h3>
+                        
+                        ${currentDisease === 'malaria' ? `
+                            <div class="space-y-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="bg-red-50 p-5 rounded-lg">
+                                        <h4 class="font-bold text-red-800 mb-3">K13 Resistance Mechanism</h4>
+                                        <p class="text-red-900 text-sm mb-4">${resistanceData.k13Description}</p>
+                                        <div class="mt-4">
+                                            <h5 class="font-bold text-red-800 text-sm mb-2">Known Mutations:</h5>
+                                            <div class="flex flex-wrap gap-2">
+                                                ${resistanceData.mutations.map(mut => `
+                                                    <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-xs font-bold">${mut}</span>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-amber-50 p-5 rounded-lg">
+                                        <h4 class="font-bold text-amber-800 mb-3">Falsified Medicine Detection</h4>
+                                        <div class="space-y-3">
+                                            <p class="text-amber-900 text-sm"><strong>Known Fake Batches:</strong> ${resistanceData.falsifiedBatches.join(', ')}</p>
+                                            <ul class="text-amber-900 text-sm space-y-2">
+                                                ${resistanceData.detectionMethods.map(method => `
+                                                    <li class="flex items-start">
+                                                        <span class="mr-2">•</span>
+                                                        <span>${method}</span>
+                                                    </li>
+                                                `).join('')}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-slate-50 p-5 rounded-lg border border-slate-200">
+                                    <h4 class="font-bold text-slate-800 mb-3">Clinical Impact</h4>
+                                    <p class="text-slate-700">${resistanceData.clinicalImpact}</p>
+                                </div>
+                            </div>
+                        ` : currentDisease === 'cholera' ? `
+                            <div class="space-y-6">
+                                <div class="bg-blue-50 p-5 rounded-lg">
+                                    <h4 class="font-bold text-blue-800 mb-3">Supply Chain Collapse</h4>
+                                    <ul class="text-blue-900 space-y-2">
+                                        ${resistanceData.supplyChain.map(item => `
+                                            <li class="flex items-start">
+                                                <span class="mr-2">•</span>
+                                                <span>${item}</span>
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="bg-slate-50 p-5 rounded-lg">
+                                        <h4 class="font-bold text-slate-800 mb-3">WASH Crisis</h4>
+                                        <p class="text-slate-700">${resistanceData.washStats}</p>
+                                    </div>
+                                    
+                                    <div class="bg-emerald-50 p-5 rounded-lg">
+                                        <h4 class="font-bold text-emerald-800 mb-3">Priorities</h4>
+                                        <ul class="text-emerald-900 space-y-2">
+                                            ${resistanceData.priorities.map(priority => `
+                                                <li class="flex items-start">
+                                                    <span class="mr-2">✅</span>
+                                                    <span>${priority}</span>
+                                                </li>
+                                            `).join('')}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : `
+                            <div class="space-y-6">
+                                <div class="bg-red-50 p-5 rounded-lg critical-border">
+                                    <h4 class="font-bold text-red-800 mb-3">Critical Safety Alert</h4>
+                                    <p class="text-red-900 mb-4">${resistanceData.criticalPoint}</p>
+                                    <div class="flex items-center">
+                                        <span class="text-3xl mr-3">☠️</span>
+                                        <p class="text-red-900 font-bold">NSAIDs (Ibuprofen/Aspirin) are FATAL in dengue patients due to thrombocytopenia</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="bg-slate-50 p-5 rounded-lg">
+                                        <h4 class="font-bold text-slate-800 mb-3">Diagnostic Challenge</h4>
+                                        <p class="text-slate-700">${resistanceData.challenge}</p>
+                                    </div>
+                                    
+                                    <div class="bg-teal-50 p-5 rounded-lg">
+                                        <h4 class="font-bold text-teal-800 mb-3">Education Priorities</h4>
+                                        <ul class="text-teal-900 space-y-2">
+                                            ${resistanceData.education.map(item => `
+                                                <li class="flex items-start">
+                                                    <span class="mr-2">📚</span>
+                                                    <span>${item}</span>
+                                                </li>
+                                            `).join('')}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        `}
+                    </div>
+
+                    <!-- Visual Inspection Guide -->
+                    <div class="stat-card">
+                        <h3 class="font-bold text-lg text-slate-800 mb-6">Three-Point Medicine Verification</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="flow-step bg-emerald-50 border border-emerald-200">
+                                <div class="flex items-center mb-3">
+                                    <span class="bg-emerald-100 text-emerald-800 p-2 rounded-lg mr-3">1</span>
+                                    <h4 class="font-bold text-emerald-800">Visual Inspection</h4>
+                                </div>
+                                <p class="text-sm text-emerald-900">Check packaging for spelling errors, poor print quality, missing batch numbers</p>
+                            </div>
+                            
+                            <div class="flow-step bg-blue-50 border border-blue-200">
+                                <div class="flex items-center mb-3">
+                                    <span class="bg-blue-100 text-blue-800 p-2 rounded-lg mr-3">2</span>
+                                    <h4 class="font-bold text-blue-800">Batch Verification</h4>
+                                </div>
+                                <p class="text-sm text-blue-900">Cross-reference with WHO/NAFDAC alert database for known fake batches</p>
+                            </div>
+                            
+                            <div class="flow-step bg-amber-50 border border-amber-200">
+                                <div class="flex items-center mb-3">
+                                    <span class="bg-amber-100 text-amber-800 p-2 rounded-lg mr-3">3</span>
+                                    <h4 class="font-bold text-amber-800">Physical Test</h4>
+                                </div>
+                                <p class="text-sm text-amber-900">Disintegration test: Genuine tablets dissolve in &lt;3 minutes</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderCalculator(data) {
+            return `
+                <div class="space-y-8">
+                    <div class="stat-card">
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">${data.calculator.title}</h3>
+                        <p class="text-slate-600 mb-6">${data.calculator.description}</p>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <!-- Calculator Interface -->
+                            <div class="space-y-6">
+                                ${currentDisease === 'malaria' ? `
+                                    <div>
+                                        <h4 class="font-bold text-slate-700 mb-4">Pediatric Dosing from Adult Tablets</h4>
+                                        <div class="bg-slate-50 p-4 rounded-lg">
+                                            <p class="text-sm text-slate-600 mb-4">During stockouts, pediatric doses can be compounded from adult Artemether-Lumefantrine tablets (20/120mg)</p>
+                                            
+                                            <div class="space-y-4">
+                                                <div class="flex items-center justify-between">
+                                                    <label class="text-sm font-medium text-slate-700">Child Weight (kg)</label>
+                                                    <input type="number" id="weightInput" value="15" min="5" max="50" class="w-24 border border-slate-300 rounded-md px-3 py-2 text-right focus:ring-2 focus:ring-emerald-500 outline-none">
+                                                </div>
+                                                
+                                                <div id="doseResult" class="bg-white p-4 rounded-lg border border-emerald-200">
+                                                    <h5 class="font-bold text-emerald-800 mb-2">Recommended Dose</h5>
+                                                    <div class="text-2xl font-bold text-emerald-600" id="calculatedDose">½ Tablet</div>
+                                                    <p class="text-sm text-slate-600 mt-2" id="doseDetails">Twice daily for 3 days</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ` : currentDisease === 'cholera' ? `
+                                    <div>
+                                        <h4 class="font-bold text-slate-700 mb-4">Rehydration Calculator</h4>
+                                        <div class="bg-slate-50 p-4 rounded-lg">
+                                            <div class="space-y-4">
+                                                <div class="flex items-center justify-between">
+                                                    <label class="text-sm font-medium text-slate-700">Patient Weight (kg)</label>
+                                                    <input type="number" id="weightInput" value="30" min="5" max="100" class="w-24 border border-slate-300 rounded-md px-3 py-2 text-right focus:ring-2 focus:ring-blue-500 outline-none">
+                                                </div>
+                                                
+                                                <div>
+                                                    <label class="text-sm font-medium text-slate-700 mb-2 block">Dehydration Severity</label>
+                                                    <select id="severitySelect" class="w-full border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none">
+                                                        <option value="mild">Mild (Plan A)</option>
+                                                        <option value="moderate">Moderate (Plan B)</option>
+                                                        <option value="severe">Severe (Plan C)</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <div id="fluidResult" class="bg-white p-4 rounded-lg border border-blue-200">
+                                                    <h5 class="font-bold text-blue-800 mb-2">Rehydration Plan</h5>
+                                                    <div class="text-2xl font-bold text-blue-600" id="calculatedFluid">750 ml</div>
+                                                    <p class="text-sm text-slate-600 mt-2" id="fluidDetails">ORS ad libitum</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <div>
+                                        <h4 class="font-bold text-slate-700 mb-4">Dengue Fluid Calculator</h4>
+                                        <div class="bg-slate-50 p-4 rounded-lg">
+                                            <p class="text-sm text-slate-600 mb-4">${data.calculator.formula}</p>
+                                            
+                                            <div class="space-y-4">
+                                                <div class="flex items-center justify-between">
+                                                    <label class="text-sm font-medium text-slate-700">Patient Weight (kg)</label>
+                                                    <input type="number" id="weightInput" value="25" min="5" max="100" class="w-24 border border-slate-300 rounded-md px-3 py-2 text-right focus:ring-2 focus:ring-teal-500 outline-none">
+                                                </div>
+                                                
+                                                <div>
+                                                    <label class="text-sm font-medium text-slate-700 mb-2 block">Disease Phase</label>
+                                                    <select id="phaseSelect" class="w-full border border-slate-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-teal-500 outline-none">
+                                                        <option value="febrile">Febrile Phase</option>
+                                                        <option value="critical">Critical Phase (Days 3-7)</option>
+                                                        <option value="recovery">Recovery Phase</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <div id="dengueResult" class="bg-white p-4 rounded-lg border border-teal-200">
+                                                    <h5 class="font-bold text-teal-800 mb-2">Maintenance Fluids</h5>
+                                                    <div class="text-2xl font-bold text-teal-600" id="calculatedMaintenance">1250 ml/24h</div>
+                                                    <p class="text-sm text-slate-600 mt-2" id="maintenanceDetails">Rate: ~52 ml/hour</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `}
+                            </div>
+                            
+                            <!-- Reference Information -->
+                            <div class="space-y-6">
+                                <div class="bg-slate-50 p-5 rounded-lg">
+                                    <h4 class="font-bold text-slate-800 mb-4">Reference Tables</h4>
+                                    
+                                    ${currentDisease === 'malaria' ? `
+                                        <div class="overflow-x-auto">
+                                            <table class="w-full text-sm text-left">
+                                                <thead class="bg-slate-100">
+                                                    <tr>
+                                                        <th class="px-4 py-2 font-bold text-slate-700">Weight Range</th>
+                                                        <th class="px-4 py-2 font-bold text-slate-700">Dose (from adult tablet)</th>
+                                                        <th class="px-4 py-2 font-bold text-slate-700">Frequency</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    ${data.calculator.dosingTable.map(row => `
+                                                        <tr class="border-b border-slate-200">
+                                                            <td class="px-4 py-3 font-medium">${row.weight}</td>
+                                                            <td class="px-4 py-3">${row.dose}</td>
+                                                            <td class="px-4 py-3">${row.frequency}</td>
+                                                        </tr>
+                                                    `).join('')}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    ` : currentDisease === 'cholera' ? `
+                                        <div class="space-y-4">
+                                            ${data.calculator.plans.map(plan => `
+                                                <div class="bg-white p-4 rounded border border-slate-200">
+                                                    <h5 class="font-bold text-slate-800 mb-2">${plan.type}</h5>
+                                                    <p class="text-sm text-slate-600"><strong>Rate:</strong> ${plan.rate}</p>
+                                                    ${plan.volume ? `<p class="text-sm text-slate-600"><strong>Volume:</strong> ${plan.volume}</p>` : ''}
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : `
+                                        <div class="space-y-4">
+                                            ${data.calculator.phases.map(phase => `
+                                                <div class="bg-white p-4 rounded border border-slate-200">
+                                                    <h5 class="font-bold text-slate-800 mb-2">${phase.phase}</h5>
+                                                    <p class="text-sm text-slate-600">${phase.action}</p>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    `}
+                                </div>
+                                
+                                <div class="bg-${data.color}-50 p-5 rounded-lg border border-${data.color}-200">
+                                    <h4 class="font-bold text-${data.color}-800 mb-3">Clinical Insight</h4>
+                                    <p class="text-sm text-${data.color}-900">
+                                        ${currentDisease === 'malaria' ? 
+                                            'In famine conditions, fatty food co-administration may be impossible. Consider DP (dihydroartemisinin-piperaquine) as an alternative when fat intake is uncertain.' :
+                                          currentDisease === 'cholera' ? 
+                                            'Rehydration saves lives. Antibiotics are secondary. In field settings, ORS can be prepared from raw materials: 1L clean water + 6 tsp sugar + 1/2 tsp salt.' :
+                                          'Monitor hematocrit every 4-6 hours during critical phase. Rising hematocrit indicates plasma leakage—increase fluids cautiously.'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderProject() {
+            return `
+                <div class="space-y-8">
+                    <!-- Project Overview -->
+                    <div class="stat-card">
+                        <h2 class="text-2xl font-bold text-slate-900 mb-6">Sudan Malaria Resilience Initiative (SMRI)</h2>
+                        <p class="text-slate-600 text-lg mb-6">
+                            A field-based pharmaceutical stewardship model designed for implementation in Sudan's conflict zones, 
+                            integrating supply chain security, adaptive clinical protocols, and resistance monitoring.
+                        </p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div class="kpi-card text-center">
+                                <div class="text-3xl font-bold text-emerald-600 mb-2">3</div>
+                                <div class="text-sm font-medium text-slate-700">Pillar Framework</div>
+                            </div>
+                            <div class="kpi-card text-center">
+                                <div class="text-3xl font-bold text-blue-600 mb-2">21%</div>
+                                <div class="text-sm font-medium text-slate-700">Falsified Medicine Risk</div>
+                            </div>
+                            <div class="kpi-card text-center">
+                                <div class="text-3xl font-bold text-teal-600 mb-2">80%</div>
+                                <div class="text-sm font-medium text-slate-700">Facilities Non-Functional</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Three Pillars -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Pillar 1 -->
+                        <div class="stat-card border-t-4 border-emerald-500">
+                            <div class="flex items-center mb-4">
+                                <span class="bg-emerald-100 text-emerald-800 p-3 rounded-lg mr-3 text-xl">1</span>
+                                <h3 class="text-lg font-bold text-slate-800">Supply Chain Security</h3>
+                            </div>
+                            <ul class="space-y-3 text-sm text-slate-600">
+                                <li class="flex items-start">
+                                    <span class="text-emerald-500 mr-2">•</span>
+                                    <span>Establish "Sentinel Pharmacy Points" in IDP camps</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-emerald-500 mr-2">•</span>
+                                    <span>Three-Point Check for all incoming medicines</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-emerald-500 mr-2">•</span>
+                                    <span>Cross-reference with WHO/NAFDAC alert database</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-emerald-500 mr-2">•</span>
+                                    <span>Immediate quarantine of suspicious batches</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Pillar 2 -->
+                        <div class="stat-card border-t-4 border-blue-500">
+                            <div class="flex items-center mb-4">
+                                <span class="bg-blue-100 text-blue-800 p-3 rounded-lg mr-3 text-xl">2</span>
+                                <h3 class="text-lg font-bold text-slate-800">Clinical Stewardship</h3>
+                            </div>
+                            <ul class="space-y-3 text-sm text-slate-600">
+                                <li class="flex items-start">
+                                    <span class="text-blue-500 mr-2">•</span>
+                                    <span>Dynamic "Red/Yellow/Green" treatment protocols</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-blue-500 mr-2">•</span>
+                                    <span>Adaptive dosing during stockouts</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-blue-500 mr-2">•</span>
+                                    <span>Pediatric compounding from adult tablets</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-blue-500 mr-2">•</span>
+                                    <span>Strict "Test and Treat" policy during shortages</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <!-- Pillar 3 -->
+                        <div class="stat-card border-t-4 border-amber-500">
+                            <div class="flex items-center mb-4">
+                                <span class="bg-amber-100 text-amber-800 p-3 rounded-lg mr-3 text-xl">3</span>
+                                <h3 class="text-lg font-bold text-slate-800">Resistance Monitoring</h3>
+                            </div>
+                            <ul class="space-y-3 text-sm text-slate-600">
+                                <li class="flex items-start">
+                                    <span class="text-amber-500 mr-2">•</span>
+                                    <span>"Day 3 Positive Loop" surveillance</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-amber-500 mr-2">•</span>
+                                    <span>Clinical proxies for K13 mutation detection</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-amber-500 mr-2">•</span>
+                                    <span>"Resistance Register" for treatment failures</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <span class="text-amber-500 mr-2">•</span>
+                                    <span>Immediate switch to second-line therapy</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Implementation Strategy -->
+                    <div class="stat-card">
+                        <h3 class="text-xl font-bold text-slate-800 mb-6">Implementation Strategy</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div>
+                                <h4 class="font-bold text-slate-700 mb-4">The Pharmacist's Role</h4>
+                                <div class="space-y-4">
+                                    <div class="flex items-start gap-3">
+                                        <span class="bg-emerald-100 text-emerald-800 p-2 rounded-lg">🔒</span>
+                                        <div>
+                                            <p class="font-medium text-slate-800">Gatekeeper</p>
+                                            <p class="text-sm text-slate-600">Primary barrier against falsified medicines</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start gap-3">
+                                        <span class="bg-blue-100 text-blue-800 p-2 rounded-lg">💡</span>
+                                        <div>
+                                            <p class="font-medium text-slate-800">Clinical Consultant</p>
+                                            <p class="text-sm text-slate-600">Advises on substitution protocols during shortages</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start gap-3">
+                                        <span class="bg-amber-100 text-amber-800 p-2 rounded-lg">👨‍🏫</span>
+                                        <div>
+                                            <p class="font-medium text-slate-800">Educator</p>
+                                            <p class="text-sm text-slate-600">Trains community health workers on proper dosing</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h4 class="font-bold text-slate-700 mb-4">Key Performance Indicators</h4>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-sm text-slate-600">Batches screened for falsification</span>
+                                        <span class="font-bold text-emerald-600">Target: 100%</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-sm text-slate-600">Day-3 treatment failures identified</span>
+                                        <span class="font-bold text-blue-600">Monitor & report</span>
+                                    </div>
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-sm text-slate-600">Stock-out duration (days)</span>
+                                        <span class="font-bold text-amber-600">Reduce from 59 days</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Conclusion -->
+                    <div class="alert-box alert-info">
+                        <h4 class="font-bold text-blue-800 text-lg mb-3">Conclusion: From Aid Distribution to Active Stewardship</h4>
+                        <p class="text-blue-900">
+                            The SMRI represents a paradigm shift from passive aid distribution to active pharmaceutical stewardship. 
+                            By operationalizing visual inspection for fake drugs, standardizing adaptive clinical protocols for shortages, 
+                            and establishing clinical surveillance for resistance, this project offers a viable pathway to sustain 
+                            life-saving treatment in Sudan's most challenging conditions. It ensures that even in the "fog of war," 
+                            the medicines reaching the patient are safe, effective, and administered with scientific precision.
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ===== UTILITY FUNCTIONS =====
+        function initChart(data) {
+            const ctx = document.getElementById('mainChart')?.getContext('2d');
+            if (!ctx) return;
+
+            const colors = {
+                malaria: { border: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },
+                cholera: { border: '#3b82f6', bg: 'rgba(59, 130, 246, 0.1)' },
+                dengue: { border: '#0d9488', bg: 'rgba(13, 148, 136, 0.1)' }
+            };
+
+            const color = colors[currentDisease];
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.epidemiology.labels,
+                    datasets: [{
+                        label: 'Cases',
+                        data: data.epidemiology.data,
+                        borderColor: color.border,
+                        backgroundColor: color.bg,
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                borderDash: [5, 5]
+                            },
+                            title: {
+                                display: true,
+                                text: 'Number of Cases'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function setupCalculator() {
+            const weightInput = document.getElementById('weightInput');
+            const severitySelect = document.getElementById('severitySelect');
+            const phaseSelect = document.getElementById('phaseSelect');
+
+            function calculate() {
+                const weight = parseFloat(weightInput?.value) || 15;
+                
+                if (currentDisease === 'malaria') {
+                    // Malaria pediatric dosing calculation
+                    let dose, details;
+                    if (weight <= 14) {
+                        dose = "¼ Tablet";
+                        details = "Twice daily for 3 days";
+                    } else if (weight <= 24) {
+                        dose = "½ Tablet";
+                        details = "Twice daily for 3 days";
+                    } else if (weight <= 34) {
+                        dose = "¾ Tablet";
+                        details = "Twice daily for 3 days";
+                    } else {
+                        dose = "1 Tablet";
+                        details = "Twice daily for 3 days";
+                    }
+                    
+                    document.getElementById('calculatedDose').textContent = dose;
+                    document.getElementById('doseDetails').textContent = details;
+                    
+                } else if (currentDisease === 'cholera') {
+                    // Cholera fluid calculation
+                    const severity = severitySelect?.value || 'mild';
+                    let fluid, details;
+                    
+                    if (severity === 'mild') {
+                        fluid = "ORS ad libitum";
+                        details = "Oral rehydration as needed";
+                    } else if (severity === 'moderate') {
+                        const volume = Math.round(weight * 75);
+                        fluid = `${volume} ml`;
+                        details = "Over 4 hours";
+                    } else { // severe
+                        const volume = Math.round(weight * 100);
+                        fluid = `${volume} ml IV`;
+                        details = "100ml/kg over 3 hours";
+                    }
+                    
+                    document.getElementById('calculatedFluid').textContent = fluid;
+                    document.getElementById('fluidDetails').textContent = details;
+                    
+                } else if (currentDisease === 'dengue') {
+                    // Dengue fluid calculation (Holiday-Segar formula)
+                    const phase = phaseSelect?.value || 'febrile';
+                    let maintenance, details;
+                    
+                    // Calculate maintenance using Holiday-Segar
+                    let maintenanceVolume;
+                    if (weight <= 10) {
+                        maintenanceVolume = weight * 100;
+                    } else if (weight <= 20) {
+                        maintenanceVolume = 1000 + (weight - 10) * 50;
+                    } else {
+                        maintenanceVolume = 1500 + (weight - 20) * 20;
+                    }
+                    
+                    if (phase === 'febrile') {
+                        maintenance = `${Math.round(maintenanceVolume)} ml/24h`;
+                        details = `Paracetamol for fever, monitor hydration`;
+                    } else if (phase === 'critical') {
+                        maintenance = `${Math.round(maintenanceVolume * 1.2)} ml/24h`;
+                        details = `Critical phase - monitor hematocrit every 4-6h`;
+                    } else {
+                        maintenance = `${Math.round(maintenanceVolume)} ml/24h`;
+                        details = `Recovery phase - watch for fluid overload`;
+                    }
+                    
+                    const hourlyRate = Math.round(parseInt(maintenance) / 24);
+                    
+                    document.getElementById('calculatedMaintenance').textContent = maintenance;
+                    document.getElementById('maintenanceDetails').textContent = `Rate: ~${hourlyRate} ml/hour`;
+                }
+            }
+
+            // Set up event listeners
+            if (weightInput) weightInput.addEventListener('input', calculate);
+            if (severitySelect) severitySelect.addEventListener('change', calculate);
+            if (phaseSelect) phaseSelect.addEventListener('change', calculate);
+            
+            // Initial calculation
+            calculate();
+        }
+
+        // ===== INITIALIZATION =====
+        document.addEventListener('DOMContentLoaded', () => {
+            renderNavigation();
+            renderView();
+        });
+
+        // ===== HELPER FUNCTIONS =====
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
